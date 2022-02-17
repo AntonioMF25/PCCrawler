@@ -5,12 +5,8 @@ public class main {
 	
 	static Map map;
 	
-	//Lista los directorios y ficheros que se encuentran en el archivo pasado como parámetro de entrada (args [0]). 
+	//Lista los directorios y ficheros que se encuentran en el directorio pasado como parámetro de entrada (args [0]). 
 	public static void listaIt (String [] args) throws Exception {
-		if (args.length < 1) {
-			System.out.println ("[ERROR] Formato: > java RIBW_actividad01 nombre_archivo");
-			return;
-		}
 		File fichero = new File (args [0]);
 		if (!fichero.exists () || !fichero.canRead ()) {
 			System.out.println ("[ERROR] El sistema no pudo leer el fichero " + fichero);
@@ -30,8 +26,7 @@ public class main {
 				//Es interesante filtrar previamente aquí los ficheros de extensión textual, como: txt, java, p, cpp...
 				FileReader fr = new FileReader (fichero);
 				BufferedReader br = new BufferedReader (fr);
-				String linea;
-				while ((linea = br.readLine ()) != null) {
+				while ((br.readLine ()) != null) {
 					fichContPalabras (args);
 				}
 				br.close ();
@@ -40,14 +35,9 @@ public class main {
 			}
 	}
 
-	//Cuenta el número de veces que aparece cada palabra del fichero pasado por primer parámetro (args [0]) y
-	//vuelca el resultado en el fichero pasado como segundo parámetro (args [1]).
+	//Cuenta el número de veces que aparece cada palabra del fichero pasado por primer parámetro (args [0]) y vuelca
+	//el resultado en el fichero "RIBW_actividad01_salida" en la ruta pasada como segundo parámetro (args [1]).
 	public static void fichContPalabras (String args []) throws IOException {
-		if (args.length < 2) {
-			System.out.println("[ERROR] Formato: > java RIBW_actividad01 fichero_entrada fichero_salida");
-			return;
-		}
-
 		String fichEntrada = args [0];
 		String fichSalida = args [1];
 
@@ -82,45 +72,53 @@ public class main {
 		pr.close ();
 	}
 
-	//Salva (escribe) en el fichero "map.ser" que estará en la ruta pasada por el primer parámetro de entrada (args [0]),
-	//el objeto de tipo "TreeMap" (Map) pasado como segundo parámetro de entrada (mapa).
+	//Salva el objeto de tipo "TreeMap" (Map) llamado "map.ser" en la ubicación pasada como segundo parámetro (args [1]).
 	public static void salvarObjeto (String args []) {
 		try {
 			FileOutputStream fos = new FileOutputStream (args[1] + "\\map.ser");
 			ObjectOutputStream oos = new ObjectOutputStream (fos);
 			oos.writeObject (map);
+			System.out.println ("[SALVADO] El sistema salvó el archivo especificado (map.ser)");
 		} catch (Exception e) {
-			System.out.println ("[CARGA] El sistema no pudo encontrar el archivo especificado (map.ser)");
+			System.out.println ("[ERROR] El sistema no pudo salvar el archivo especificado (map.ser)");
 			System.out.println (e);
 		}
 	}
 
-	//Carga el fichero "h.ser" que se encuentra en la ruta pasada como parámetro de entrada (args [0]) y lo retorna (salida)
-	//como un objeto de tipo "TreeMap" (Map). En caso de que no encuentre "map.ser" se arroja una excepción y devuelve "null".
+	//Carga el fichero "h.ser" que se encuentra en la ruta pasada como segundo parámetro de entrada (args [1]) y lo retorna
+	//como un objeto de tipo "TreeMap" (Map). En caso de que no encuentre "map.ser" arroja una excepción y devuelve "null".
 	public static Map cargarObjeto (String args []) {
 		try {
 			FileInputStream fis = new FileInputStream (args[1] + "\\map.ser");
 			ObjectInputStream ois = new ObjectInputStream (fis);
-			Map map = (TreeMap) ois.readObject ();
-			System.out.println ("[CARGA] El sistema encontró el archivo especificado (map.ser)");
+			map = (TreeMap) ois.readObject ();
+			System.out.println ("[CARGA] El sistema cargó el archivo especificado (map.ser)");
 			return map;
 		} catch (Exception e) {
-			System.out.println ("[CARGA] El sistema no pudo encontrar el archivo especificado (map.ser)");
+			System.out.println ("[ERROR] El sistema no pudo cargar el archivo especificado (map.ser)");
 			return null;
 		}
 	}
 
-	//Inicia la ejecución del programa Java y debe contener dos parámetros de entrada: args [0] hace referencia al archivo que
-	//se quiere recorrer y por otro lado, args [1] hace refenrecia al fichero de salida donde se volcará las palabras contadas.
+	//Inicia la ejecución del programa Java y debe contener dos parámetros de entrada: args [0] hace referencia al directorio que
+	//se quiere recorrer y por otro lado, args [1] hace referencia al directorio de salida donde se volcará las palabras contadas.
 	public static void main (String [] args) throws Exception {
-		File file = new File (args[1] + "\\map.ser"); 
-
-		if (file.exists ()) {
-			map = cargarObjeto (args);
-		} else {
-			map = new TreeMap ();
+		if (args.length < 2) {
+			System.out.println ("[ERROR] Formato: > java main directorio_entrada directorio_entrada_salida");
 		}
-		listaIt (args);
-		salvarObjeto (args);
+		else {
+			System.out.println ("[INICIO] El programa ha iniciado correctamente");
+			File file = new File (args[1] + "\\map.ser"); 
+
+			if (file.exists ()) {
+				map = cargarObjeto (args);
+			} else {
+				System.out.println ("[CARGA] El sistema ha creado el archivo especificado (map.ser)");
+				map = new TreeMap ();
+			}
+			listaIt (args);
+			salvarObjeto (args);
+			System.out.println ("[FINAL] El programa ha finalizado correctamente");
+		}
 	}
 }
