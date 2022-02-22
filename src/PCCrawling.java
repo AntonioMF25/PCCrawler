@@ -1,9 +1,9 @@
 import java.util.*;
 import java.io.*;
 
-public class main {
+public class PCCrawling {
 	
-	static Map map;
+	static Map<String, Ocurrencias> map;
 	
 	//Lista los directorios y ficheros que se encuentran en el directorio pasado como parámetro de entrada (args [0]). 
 	public static void listaIt (String [] args) throws Exception {
@@ -24,12 +24,7 @@ public class main {
 		} else
 			try {
 				//Es interesante filtrar previamente aquí los ficheros de extensión textual, como: txt, java, p, cpp...
-				FileReader fr = new FileReader (fichero);
-				BufferedReader br = new BufferedReader (fr);
-				while ((br.readLine ()) != null) {
-					fichContPalabras (args);
-				}
-				br.close ();
+				fichContPalabras (args);
 			} catch (FileNotFoundException fnfe) {
 				System.out.println ("[ERROR] Fichero desaparecido en combate");
 			}
@@ -40,34 +35,45 @@ public class main {
 	public static void fichContPalabras (String args []) throws IOException {
 		String fichEntrada = args [0];
 		String fichSalida = args [1];
+		File fPath = new File (args [0]);
 
 		BufferedReader br = new BufferedReader (new FileReader (fichEntrada));
 		String linea;
 
 		while ((linea = br.readLine ()) != null) {
-			StringTokenizer st = new StringTokenizer (linea, ";:.,/\\_- \n\r\"'");
+			StringTokenizer st = new StringTokenizer (linea, ";:¡!¿?{}[]().,/\\_- \n\r\"'");
 			while (st.hasMoreTokens ()) {
-				String s = st.nextToken ();
+				String s = st.nextToken ().toLowerCase();
 				Object o = map.get (s);
 				if (o == null) {
-					map.put (s, Integer.valueOf (1));
+					map.put (s, new Ocurrencias (fPath.getPath())); //args[0]
 				}
 				else {
-					Integer cont = (Integer) o;
-					map.put (s, Integer.valueOf (cont.intValue () + 1));
+					Ocurrencias oc = map.get(s);
+					oc.putOcurr(fPath.getPath());
+					map.put (s, oc);
+					oc = map.get(s);
 				}
 			}
 		}
 		br.close ();
 
-		List claves = new ArrayList (map.keySet ());
+		List<String> claves = new ArrayList<String> (map.keySet ());
 		Collections.sort (claves);
 		
 		PrintWriter pr = new PrintWriter (new FileWriter (fichSalida + "\\RIBW_actividad01_salida.txt"));
-		Iterator i = claves.iterator ();
+		Iterator<String> i = claves.iterator ();
 		while (i.hasNext ()) {
 			Object k = i.next ();
-			pr.println (k + " : " + map.get (k));
+			Ocurrencias oc = map.get(k);
+			pr.println (k + " : " + oc.getFt());
+			Map <String, Integer> aux = oc.getOcurr();
+			List<String> l = new ArrayList<String> (aux.keySet());
+			Iterator<String> it = l.iterator();
+			while (it.hasNext()) {
+				Object s = it.next();
+				pr.println("\t--> " + s + " : " + aux.get(s));
+			}
 		}
 		pr.close ();
 	}
@@ -87,11 +93,12 @@ public class main {
 
 	//Carga el fichero "h.ser" que se encuentra en la ruta pasada como segundo parámetro de entrada (args [1]) y lo retorna
 	//como un objeto de tipo "TreeMap" (Map). En caso de que no encuentre "map.ser" arroja una excepción y devuelve "null".
-	public static Map cargarObjeto (String args []) {
+	public static Map<String, Ocurrencias> cargarObjeto (String args []) {
 		try {
 			FileInputStream fis = new FileInputStream (args[1] + "\\map.ser");
 			ObjectInputStream ois = new ObjectInputStream (fis);
-			map = (TreeMap) ois.readObject ();
+			map = (TreeMap<String, Ocurrencias>) ois.readObject ();
+			ois.close();
 			System.out.println ("[CARGA] El sistema cargó el archivo especificado (map.ser)");
 			return map;
 		} catch (Exception e) {
@@ -103,8 +110,10 @@ public class main {
 	//Inicia la ejecución del programa Java y debe contener dos parámetros de entrada: args [0] hace referencia al directorio que
 	//se quiere recorrer y por otro lado, args [1] hace referencia al directorio de salida donde se volcará las palabras contadas.
 	public static void main (String [] args) throws Exception {
-		if (args.length < 2) {
-			System.out.println ("[ERROR] Formato: > java main directorio_entrada directorio_entrada_salida");
+		File f1 = new File (args[0]);
+		File f2 = new File (args[1]);
+		if (args.length < 2 && !f1.canRead() && !f2.canRead()) {
+			System.out.println ("[ERROR] Formato: > java PCCrawling directorio_entrada directorio_entrada_salida");
 		}
 		else {
 			System.out.println ("[INICIO] El programa ha iniciado correctamente");
@@ -114,7 +123,7 @@ public class main {
 				map = cargarObjeto (args);
 			} else {
 				System.out.println ("[CARGA] El sistema ha creado el archivo especificado (map.ser)");
-				map = new TreeMap ();
+				map = new TreeMap<String, Ocurrencias> ();
 			}
 			listaIt (args);
 			salvarObjeto (args);
