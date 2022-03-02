@@ -4,17 +4,27 @@ import java.text.Normalizer;
 
 public class PCCrawling {
 	
-	static Map <String, Ocurrencias> map;
-	static Map <String, Integer> thesauro;
+	static Map <String, Ocurrencias> map; //Estrutura de datos que almacena las palabras que aparecen y cuántas veces.
+	static Map <String, Integer> thesauro; //Estructura de datos que almacena las palabras del thesauro invertido.
+	
+	//Devuelve el mismo token pasado como parámetro de entrada ("token") pero sin mayúsculas, tildes ni diéresis.
+	public static String reemplazarCaracteresEspeciales (StringTokenizer token) {
+		String source = Normalizer.normalize (token.nextToken ().toLowerCase (), Normalizer.Form.NFD);
+	    return source.replaceAll ("[^\\p{ASCII}]", "");
+	}
 	
 	//Lista los directorios y ficheros que se encuentran en el directorio pasado como parámetro de entrada (rutaEntrada). 
 	public static void listaIt (String rutaEntrada) throws Exception {
 		File fichero = new File (rutaEntrada);
 		
+		//Se comprueba si la ruta pasada como parámetro de entrada existe y si esta se puede leer (no está corrupta).
+		//En caso afirmativo continúa la ejecución del método, pero en caso contrario se muestra un error y finaliza.
 		if (!fichero.exists () || !fichero.canRead ()) {
 			System.out.println ("[ERROR] El sistema no pudo encontrar el fichero " + fichero);
 			return;
 		}
+		//Se comprueba si la ruta pasada como parámetro de entrada es un directorio. En caso afirmativo recorre todos
+		//los archivos de este directorio de forma recursiva. Si no es un directorio contínua la ejecución del método.
 		if (fichero.isDirectory ()) {
 			String [] listaFicheros = fichero.list ();
 			String tmpRuta = rutaEntrada;
@@ -23,29 +33,39 @@ public class PCCrawling {
 				listaIt (fichero.getPath () + "\\" + listaFicheros [i]);
 				rutaEntrada = tmpRuta;
 			}
-		} else
+		}
+		//En caso de que la ruta pasada como parámetro de entrada no sea un directorio se comprueba que sea un fichero
+		//de extensión ".txt". En caso afirmativo leerá y contará las palabras de este, en caso contrario no hará nada.
+		else {
 			try {
-				//Es interesante filtrar previamente aquí los ficheros de extensión textual, como: txt, java, p, cpp...
 				if (rutaEntrada.endsWith (".txt")) {
 					fichContPalabras (rutaEntrada);
 				}
 			} catch (FileNotFoundException fnfe) {
 				System.out.println ("[ERROR] El sistema no pudo leer el fichero " + fichero);
 			}
+		}
 	}
 
 	//Cuenta el número de veces que aparece cada palabra en el fichero pasado como parámetro de entrada (rutaEntrada).
+	//Si la palabra leída aparece en el thesauro, entonces no se introduce en la estructura "map" de tipo "TreeMap".
 	public static void fichContPalabras (String rutaEntrada) throws IOException {
-
 		BufferedReader br = new BufferedReader (new FileReader (rutaEntrada));
 		File fPath = new File (rutaEntrada);
 		String linea;
 
+		//El sistema entenderá como "token" aquel conjunto de caracteres que aparacezcan seguidos hasta un delimitador. Los
+		//delimitadores son puntos, comas, espacios, paréntesis, comillas, etc. Tras ello, a cada uno de estos "tokens" les
+		//quitará las mayúsculas, las tildes y los diéresis y por último, los guardará en el objeto "map" de tipo "TreeMap".
 		while ((linea = br.readLine ()) != null) {
-			StringTokenizer st = new StringTokenizer (linea, ";:¡!¿?{}[]().,/\\_- \n\r\"'");
+			StringTokenizer st = new StringTokenizer (linea, ";:¡!¿?{}[]|&%$#€@<>~¬=+*`´¨()·.,/\\_- \n\r\"'");
 			while (st.hasMoreTokens ()) {
-				String s = st.nextToken ().toLowerCase ().replace("á", "a").replace("é", "e").replace("í", "i").replace("ú", "u").replace("ó", "o").replace("ä", "a").replace("ë", "e").replace("ï", "i").replace("ö", "o").replace("ü", "u");
-				if (!thesauro.containsKey(s)) {
+				String s = reemplazarCaracteresEspeciales (st);
+				
+				//Se trata de un thesauro invertido: si este contiene la palabra leída, entonces no se introduce en "map".
+				//En caso de que no aparezca en el thesauro, se comprueba si el fichero donde se encuentra el token leído
+				//ya existe en la estructura de datos "map". Si existe aumenta en uno el contador total (nf), sino lo crea.
+				if (!thesauro.containsKey (s)) {
 					Object o = map.get (s);
 					if (o == null) {
 						map.put (s, new Ocurrencias (fPath.getPath ()));
@@ -61,10 +81,12 @@ public class PCCrawling {
 	}
 	
 	//Vuelca el resultado en el fichero "RIBW_salida" en la ruta pasada como parámetro de entrada ("rutaSalida").
+	//Las palabras aparecerán ordenadas alfabéticamente de manera ascendente, es decir, de la letra "A" a la "Z".
 	public static void salvarSalida (String rutaSalida) throws IOException {
 		List <String> claves = new ArrayList <String> (map.keySet ());
 		Collections.sort (claves);
 		
+		//Muestra cada una de las palabras y el número de veces que aparecen cada una de ellas en total (Ej. mama: 2).
 		PrintWriter pr = new PrintWriter (new FileWriter (rutaSalida + "\\RIBW_salida.txt"));
 		Iterator <String> i = claves.iterator ();
 		while (i.hasNext ()) {
@@ -72,6 +94,7 @@ public class PCCrawling {
 			Ocurrencias oc = map.get (k);
 			pr.println (k + " : " + oc.getFt ());
 			
+			//Para cada palabra, muestra en qué ficheros de texto aparece y cuántas veces (Ej. C:\FileRute\file.txt: 4).
 			Map <String, Integer> aux = oc.getOcurr ();
 			List <String> l = new ArrayList <String> (aux.keySet ());
 			Iterator <String> it = l.iterator ();
@@ -115,19 +138,26 @@ public class PCCrawling {
 		}
 	}
 	
+	//Carga las palabras del thesauro "stopwords_es.txt", que se encuentra en la ruta pasada como parámetro ("rutaThesauro"),
+	//y lo guarda en un objeto de tipo "TreeMap" (Map) llamado "thesauro". Si no encuentra "stopwords_es.txt" muestra un error.
 	public static void cargarThesauroInvertido (String rutaThesauro) throws IOException {
+		File ficheroThesauro = new File (rutaThesauro + "\\stopwords_es.txt");
 		
-		File ruta = new File (rutaThesauro + "\\stopwords_es.txt");
-		if (ruta.exists()) {
+		if (!ficheroThesauro.exists ()) {
+			System.out.println ("[ERROR] El sistema no pudo cargar el archivo especificado (stopwords_es.txt)");
+			return;
+		}
+		else {
 			thesauro = new TreeMap <String, Integer> ();
-			
-			BufferedReader br = new BufferedReader (new FileReader (ruta));
+			BufferedReader br = new BufferedReader (new FileReader (ficheroThesauro));
 			String linea;
-
+			
+			//A cada palabra que lea de "stopwords_es.txt" le quitará las mayúsculas, las tildes y los diéresis. Tras ello, las
+			//guardará en la estructura "TreeMap" llamada "thesauro". Se evitará introducir dos palabras iguales en el "TreeMap".
 			while ((linea = br.readLine ()) != null) {
 				StringTokenizer st = new StringTokenizer (linea);
 				while (st.hasMoreTokens ()) {
-					String s = st.nextToken ().toLowerCase ().replace("á", "a").replace("é", "e").replace("í", "i").replace("ú", "u").replace("ó", "o").replace("ä", "a").replace("ë", "e").replace("ï", "i").replace("ö", "o").replace("ü", "u");
+					String s = reemplazarCaracteresEspeciales (st);
 					Object o = thesauro.get (s);
 					if (o == null) {
 						thesauro.put (s, null);
@@ -137,18 +167,17 @@ public class PCCrawling {
 			System.out.println ("[CARGA] El sistema cargó el archivo especificado (stopwords_es.txt)");
 			br.close ();
 		}
-		else {
-			System.out.println ("[ERROR] El sistema no pudo cargar el archivo especificado (stopwords_es.txt)");
-		}
-		
 	}
 
 	//Inicia la ejecución del programa Java y debe contener dos parámetros de entrada: args [0] hace referencia al directorio que
 	//se quiere recorrer y por otro lado, args [1] hace referencia al directorio de salida donde se volcará las palabras contadas.
+	//En la ruta del segundo parámetro pasado por entrada (args [1]) se debe encuentrar el fichero thesauro ("stopwords_es.txt").
 	public static void main (String [] args) throws Exception {
 		File f1 = new File (args [0]);
 		File f2 = new File (args [1]);
 		
+		//Se comprueba si hay como mínimo dos parámetros de entrada y si estos se pueden leer (no están corruptos).
+		//En caso afirmativo comienza la ejecución del programa y en caso contrario se muestra un error y finaliza.
 		if (args.length < 2 && !f1.canRead () && !f2.canRead ()) {
 			System.out.println ("[ERROR] Formato: > java PCCrawling directorio_entrada directorio_entrada_salida");
 		}
@@ -156,6 +185,8 @@ public class PCCrawling {
 			System.out.println ("[INICIO] El programa ha iniciado correctamente");
 			File file = new File (args [1] + "\\map.ser");
 
+			//Si el sistema encuentra el fichero "map.ser" en la ruta pasada como segundo parámetro (args [1]) lo carga
+			//en el objeto "map" de tipo "TreeMap". Si el sistema no encuentra el fichero "map.ser", entonces lo crea.
 			if (file.exists ()) {
 				map = cargarObjeto (args [1]);
 			} else {
@@ -163,12 +194,11 @@ public class PCCrawling {
 				map = new TreeMap <String, Ocurrencias> ();
 			}
 			
-			cargarThesauroInvertido (args [1]);
-			listaIt (args [0]);
+			cargarThesauroInvertido (args [1]); //Carga las palabras del thesauro (stopwords_es.txt).
+			listaIt (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
 			salvarSalida (args [1]); //Salva el fichero de salida (RIBW_salida.txt).
 			salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
 			System.out.println ("[FINAL] El programa ha finalizado correctamente");
 		}
 	}
-
 }
