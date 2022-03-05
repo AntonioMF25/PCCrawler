@@ -14,7 +14,7 @@ public class PCCrawling {
 	}
 	
 	//Lista los directorios y ficheros que se encuentran en el directorio pasado como parámetro de entrada (rutaEntrada). 
-	public static void listaIt (String rutaEntrada) throws Exception {
+	public static void recorridoRecursivo (String rutaEntrada) throws Exception {
 		File fichero = new File (rutaEntrada);
 		
 		//Se comprueba si la ruta pasada como parámetro de entrada existe y si esta se puede leer (no está corrupta).
@@ -30,7 +30,7 @@ public class PCCrawling {
 			String tmpRuta = rutaEntrada;
 			for (int i = 0; i < listaFicheros.length; i++) {
 				System.out.println (" - " + listaFicheros [i]);
-				listaIt (fichero.getPath () + "\\" + listaFicheros [i]);
+				recorridoRecursivo (fichero.getPath () + "\\" + listaFicheros [i]);
 				rutaEntrada = tmpRuta;
 			}
 		}
@@ -179,7 +179,7 @@ public class PCCrawling {
 		//Se comprueba si hay como mínimo dos parámetros de entrada y si estos se pueden leer (no están corruptos).
 		//En caso afirmativo comienza la ejecución del programa y en caso contrario se muestra un error y finaliza.
 		if (args.length < 2 && !f1.canRead () && !f2.canRead ()) {
-			System.out.println ("[ERROR] Formato: > java PCCrawling directorio_entrada directorio_entrada_salida");
+			System.out.println ("[ERROR] Formato: > java PCCrawling directorio_entrada directorio_salida");
 		}
 		else {
 			System.out.println ("[INICIO] El programa ha iniciado correctamente");
@@ -195,7 +195,7 @@ public class PCCrawling {
 			}
 			
 			cargarThesauroInvertido (args [1]); //Carga las palabras del thesauro (stopwords_es.txt).
-			listaIt (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
+			recorridoRecursivo (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
 			salvarSalida (args [1]); //Salva el fichero de salida (RIBW_salida.txt).
 			salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
 			System.out.println ("[FINAL] El programa ha finalizado correctamente");
