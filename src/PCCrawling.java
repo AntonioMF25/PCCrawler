@@ -29,7 +29,6 @@ public class PCCrawling {
 			String [] listaFicheros = fichero.list ();
 			String tmpRuta = rutaEntrada;
 			for (int i = 0; i < listaFicheros.length; i++) {
-				System.out.println (" - " + listaFicheros [i]);
 				recorridoRecursivo (fichero.getPath () + "\\" + listaFicheros [i]);
 				rutaEntrada = tmpRuta;
 			}
@@ -82,17 +81,17 @@ public class PCCrawling {
 	
 	//Vuelca el resultado en el fichero "RIBW_salida" en la ruta pasada como parámetro de entrada ("rutaSalida").
 	//Las palabras aparecerán ordenadas alfabéticamente de manera ascendente, es decir, de la letra "A" a la "Z".
-	public static void salvarSalida (String rutaSalida) throws IOException {
+	public static void mostrarPantalla () {
 		List <String> claves = new ArrayList <String> (map.keySet ());
 		Collections.sort (claves);
+		System.out.println ();
 		
 		//Muestra cada una de las palabras y el número de veces que aparecen cada una de ellas en total (Ej. mama: 2).
-		PrintWriter pr = new PrintWriter (new FileWriter (rutaSalida + "\\RIBW_salida.txt"));
 		Iterator <String> i = claves.iterator ();
 		while (i.hasNext ()) {
 			Object k = i.next ();
 			Ocurrencias oc = map.get (k);
-			pr.println (k + " : " + oc.getFt ());
+			System.out.println ("• " + k + ": " + oc.getFt ());
 			
 			//Para cada palabra, muestra en qué ficheros de texto aparece y cuántas veces (Ej. C:\FileRute\file.txt: 4).
 			Map <String, Integer> aux = oc.getOcurr ();
@@ -100,12 +99,10 @@ public class PCCrawling {
 			Iterator <String> it = l.iterator ();
 			while (it.hasNext ()) {
 				Object s = it.next ();
-				pr.println ("\t- " + s + " : " + aux.get (s));
+				System.out.println ("\t- " + s + ": " + aux.get (s));
 			}
 		}
-		
-		System.out.println ("[SALVADO] El sistema salvó el archivo especificado (RIBW_salida.txt)");
-		pr.close ();
+		System.out.println ();
 	}
 
 	//Salva el objeto de tipo "TreeMap" (Map) en el fichero "map.ser" de la ubicación pasada como parámetro ("rutaSalida").
@@ -194,10 +191,24 @@ public class PCCrawling {
 				map = new TreeMap <String, Ocurrencias> ();
 			}
 			
-			cargarThesauroInvertido (args [1]); //Carga las palabras del thesauro (stopwords_es.txt).
-			recorridoRecursivo (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
-			salvarSalida (args [1]); //Salva el fichero de salida (RIBW_salida.txt).
-			salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
+			Scanner scanner = new Scanner (System.in);
+			System.out.println("0 si salir 1 si consulta 2 si recorrer directorio: ");
+			switch (scanner.nextInt()) {
+			case 0:
+				return;
+			case 1:
+				Consultas consulta = new Consultas (map);
+				consulta.consultar();
+				break;
+			case 2:
+				cargarThesauroInvertido (args [1]); //Carga las palabras del thesauro (stopwords_es.txt).
+				recorridoRecursivo (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
+				salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
+				mostrarPantalla (); //Salva el fichero de salida (RIBW_salida.txt).
+				break;
+			default:
+				
+			}
 			System.out.println ("[FINAL] El programa ha finalizado correctamente");
 		}
 	}
