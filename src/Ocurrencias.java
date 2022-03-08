@@ -9,7 +9,7 @@ public class Ocurrencias implements Serializable {
 	//Inicializa las instancias de la clase Ocurrencias (constructor).
 	public Ocurrencias (String nf) {
 		ocurr.put (nf, 1);
-		Ft = Integer.valueOf(1);
+		Ft = Integer.valueOf (1);
 	}
 	
 	//Devuelve/retorna el atributo "Ft".
@@ -26,10 +26,10 @@ public class Ocurrencias implements Serializable {
 	//caso contrario inicializa ese número de palabras (ftd) a 1, al ser la primera palabra de ese tipo que aparece en ese fichero.
 	public void putOcurr (String nf) {
 		if (ocurr.get (nf) != null) {
-			ocurr.put (nf, ocurr.get (nf) + Integer.valueOf(1));
+			ocurr.put (nf, ocurr.get (nf) + Integer.valueOf (1));
 		}
 		else {
-			ocurr.put (nf, Integer.valueOf(1));
+			ocurr.put (nf, Integer.valueOf (1));
 		}
 		Ft++;
 	}

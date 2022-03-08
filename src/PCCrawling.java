@@ -79,9 +79,8 @@ public class PCCrawling {
 		br.close ();
 	}
 	
-	//Vuelca el resultado en el fichero "RIBW_salida" en la ruta pasada como parámetro de entrada ("rutaSalida").
-	//Las palabras aparecerán ordenadas alfabéticamente de manera ascendente, es decir, de la letra "A" a la "Z".
-	public static void mostrarPantalla () {
+	//Vuelca el resultado en la consola, ordenando las palabras alfabéticamente de manera ascendente (de la "A" a la "Z").
+	public static void mostrarEnPantalla () {
 		List <String> claves = new ArrayList <String> (map.keySet ());
 		Collections.sort (claves);
 		System.out.println ();
@@ -91,7 +90,7 @@ public class PCCrawling {
 		while (i.hasNext ()) {
 			Object k = i.next ();
 			Ocurrencias oc = map.get (k);
-			System.out.println ("• " + k + ": " + oc.getFt ());
+			System.out.println (" - " + k + ": " + oc.getFt ());
 			
 			//Para cada palabra, muestra en qué ficheros de texto aparece y cuántas veces (Ej. C:\FileRute\file.txt: 4).
 			Map <String, Integer> aux = oc.getOcurr ();
@@ -99,10 +98,9 @@ public class PCCrawling {
 			Iterator <String> it = l.iterator ();
 			while (it.hasNext ()) {
 				Object s = it.next ();
-				System.out.println ("\t- " + s + ": " + aux.get (s));
+				System.out.println ("\t» " + s + ": " + aux.get (s));
 			}
 		}
-		System.out.println ();
 	}
 
 	//Salva el objeto de tipo "TreeMap" (Map) en el fichero "map.ser" de la ubicación pasada como parámetro ("rutaSalida").
@@ -141,7 +139,7 @@ public class PCCrawling {
 		File ficheroThesauro = new File (rutaThesauro + "\\stopwords_es.txt");
 		
 		if (!ficheroThesauro.exists ()) {
-			System.out.println ("[ERROR] El sistema no pudo cargar el archivo especificado (stopwords_es.txt)");
+			System.out.println ("\n[ERROR] El sistema no pudo cargar el archivo especificado (stopwords_es.txt)");
 			return;
 		}
 		else {
@@ -161,9 +159,39 @@ public class PCCrawling {
 					}
 				}
 			}
-			System.out.println ("[CARGA] El sistema cargó el archivo especificado (stopwords_es.txt)");
+			System.out.println ("\n[CARGA] El sistema cargó el archivo especificado (stopwords_es.txt)");
 			br.close ();
 		}
+	}
+	
+	//El sistema solicita al usuario que introduzca por teclado la acción que desea realizar. Si pulsa "0" finalizará el programa,
+	//si pulsa "1" consultará un término, si pulsa "2" recorrerá el directorio pasado por parámetro de entrada y si pulsa cualquier
+	//otra tecla el sistema le avisará que la opción introducida no existe y le preguntará de nuevo qué acción desea realizar.
+	public static void seleccionarOpcion (String [] args) throws Exception {
+		Scanner scanner = new Scanner (System.in); String opcion = "0";
+		System.out.println ("\n[PC-CRAWLER] Seleccione la opción que desea realizar (0-2):");
+		System.out.print (" 0. Salir \n 1. Consultar término \n 2. Recorrer directorio");
+		
+		do {
+			System.out.print ("\n[PC-CRAWLER] Opción elegida: ");
+			switch (opcion = scanner.next ()) {
+			case "0":
+				break;
+			case "1":
+				Consultas consulta = new Consultas (map);
+				consulta.consultar (); //Ejecuta la acción de consultar un término, indicando dónde aparece y cuántas veces.
+				break;
+			case "2":
+				cargarThesauroInvertido (args [1]); //Carga las palabras del thesauro (stopwords_es.txt).
+				recorridoRecursivo (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
+				salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
+				mostrarEnPantalla (); //Vuelca en pantalla el resultado obtenido (palabras leídas y el número de veces).
+				break;
+			default:
+				System.out.print ("\n[PC-CRAWLER] La opción que ha introducido no existe. Vuelva a intentarlo");
+			}
+		} while (!opcion.equals ("0") && !opcion.equals ("1") && !opcion.equals ("2"));
+		scanner.close ();
 	}
 
 	//Inicia la ejecución del programa Java y debe contener dos parámetros de entrada: args [0] hace referencia al directorio que
@@ -191,25 +219,8 @@ public class PCCrawling {
 				map = new TreeMap <String, Ocurrencias> ();
 			}
 			
-			Scanner scanner = new Scanner (System.in);
-			System.out.println("0 si salir 1 si consulta 2 si recorrer directorio: ");
-			switch (scanner.nextInt()) {
-			case 0:
-				return;
-			case 1:
-				Consultas consulta = new Consultas (map);
-				consulta.consultar();
-				break;
-			case 2:
-				cargarThesauroInvertido (args [1]); //Carga las palabras del thesauro (stopwords_es.txt).
-				recorridoRecursivo (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
-				salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
-				mostrarPantalla (); //Salva el fichero de salida (RIBW_salida.txt).
-				break;
-			default:
-				
-			}
-			System.out.println ("[FINAL] El programa ha finalizado correctamente");
+			seleccionarOpcion (args); //El usuario debe elegir qué acción desea realizar.
+			System.out.println ("\n[FINAL] El programa ha finalizado correctamente");
 		}
 	}
 }
