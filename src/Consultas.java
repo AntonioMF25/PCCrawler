@@ -8,7 +8,7 @@ public class Consultas {
 	
 	//Inicializa las instancias de la clase Consultas (constructor).
 	public Consultas (Map <String, Ocurrencias> map) {
-		this.map = map;
+		Consultas.map = map;
 	}
 	
 	//Devuelve el mismo término pasado como parámetro de entrada ("termino") pero sin mayúsculas, tildes ni diéresis.
@@ -21,7 +21,7 @@ public class Consultas {
 	//lo indicará mediante un mensaje. Por el contrario, si lo encuentra indicará en qué ficheros aparece y cuántas veces.
 	public void consultar () {
 		System.out.print ("\n[PC-CRAWLER] Escriba el término que desea consultar: ");
-		Scanner scanner = new Scanner (System.in);
+		@SuppressWarnings ("resource") Scanner scanner = new Scanner (System.in);
 		String consulta = reemplazarCaracteresEspeciales (scanner.next ());
 		
 		Ocurrencias oc = map.get (consulta);

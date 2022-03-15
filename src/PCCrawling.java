@@ -34,12 +34,12 @@ public class PCCrawling {
 			}
 		}
 		//En caso de que la ruta pasada como parámetro de entrada no sea un directorio se comprueba que sea un fichero
-		//de extensión ".txt". En caso afirmativo leerá y contará las palabras de este, en caso contrario no hará nada.
+		//de extensión ".txt", ".html", ".pdf" o ".class". Si esto sucede tendrá en cuenta únicamente aquellas palabras
+		//que son clave y las contará. En caso contrario no hará nada, es decir, ignorará esos determinados ficheros.
 		else {
 			try {
-				if (rutaEntrada.endsWith (".txt")) {
-					fichContPalabras (rutaEntrada);
-				}
+				Parser parser = new Parser ();
+				fichContPalabras (rutaEntrada, parser.leerFichero (rutaEntrada));
 			} catch (FileNotFoundException fnfe) {
 				System.out.println ("[ERROR] El sistema no pudo leer el fichero " + fichero);
 			}
@@ -48,35 +48,29 @@ public class PCCrawling {
 
 	//Cuenta el número de veces que aparece cada palabra en el fichero pasado como parámetro de entrada (rutaEntrada).
 	//Si la palabra leída aparece en el thesauro, entonces no se introduce en la estructura "map" de tipo "TreeMap".
-	public static void fichContPalabras (String rutaEntrada) throws IOException {
-		BufferedReader br = new BufferedReader (new FileReader (rutaEntrada));
-		File fPath = new File (rutaEntrada);
-		String linea;
-
+	public static void fichContPalabras (String rutaEntrada, String contenido) throws IOException {
+		
 		//El sistema entenderá como "token" aquel conjunto de caracteres que aparacezcan seguidos hasta un delimitador. Los
 		//delimitadores son puntos, comas, espacios, paréntesis, comillas, etc. Tras ello, a cada uno de estos "tokens" les
 		//quitará las mayúsculas, las tildes y los diéresis y por último, los guardará en el objeto "map" de tipo "TreeMap".
-		while ((linea = br.readLine ()) != null) {
-			StringTokenizer st = new StringTokenizer (linea, ";:¡!¿?{}[]|&%$#€@<>~¬=+*`´¨()·.,/\\_- \n\r\"'");
-			while (st.hasMoreTokens ()) {
-				String s = reemplazarCaracteresEspeciales (st);
-				
-				//Se trata de un thesauro invertido: si este contiene la palabra leída, entonces no se introduce en "map".
-				//En caso de que no aparezca en el thesauro, se comprueba si el fichero donde se encuentra el token leído
-				//ya existe en la estructura de datos "map". Si existe aumenta en uno el contador total (nf), sino lo crea.
-				if (!thesauro.containsKey (s)) {
-					Object o = map.get (s);
-					if (o == null) {
-						map.put (s, new Ocurrencias (fPath.getPath ()));
-					}
-					else {
-						((Ocurrencias) o).putOcurr (fPath.getPath ());
-						map.put (s, (Ocurrencias) o);
-					}
-				}	
-			}
+		StringTokenizer st = new StringTokenizer (contenido, ";:¡!¿?{}[]|&%$#€@<>~¬=+*`´¨()·.,/\\_- \n\r\"'");
+		while (st.hasMoreTokens ()) {
+			String s = reemplazarCaracteresEspeciales (st);
+			
+			//Se trata de un thesauro invertido: si este contiene la palabra leída, entonces no se introduce en "map".
+			//En caso de que no aparezca en el thesauro, se comprueba si el fichero donde se encuentra el token leído
+			//ya existe en la estructura de datos "map". Si existe aumenta en uno el contador total (nf), sino lo crea.
+			if (!thesauro.containsKey (s)) {
+				Object o = map.get (s);
+				if (o == null) {
+					map.put (s, new Ocurrencias (rutaEntrada));
+				}
+				else {
+					((Ocurrencias) o).putOcurr (rutaEntrada);
+					map.put (s, (Ocurrencias) o);
+				}
+			}	
 		}
-		br.close ();
 	}
 	
 	//Vuelca el resultado en la consola, ordenando las palabras alfabéticamente de manera ascendente (de la "A" a la "Z").
@@ -119,6 +113,7 @@ public class PCCrawling {
 
 	//Carga el fichero "map.ser" que se encuentra en la ruta pasada como parámetro de entrada ("rutaSalida") y lo retorna
 	//como un objeto de tipo "TreeMap" (Map). En caso de que no encuentre "map.ser" arroja una excepción y devuelve "null".
+	@SuppressWarnings ("unchecked")
 	public static Map <String, Ocurrencias> cargarObjeto (String rutaSalida) {
 		try {
 			FileInputStream fis = new FileInputStream (rutaSalida + "\\map.ser");
@@ -135,12 +130,12 @@ public class PCCrawling {
 	
 	//Carga las palabras del thesauro "stopwords_es.txt", que se encuentra en la ruta pasada como parámetro ("rutaThesauro"),
 	//y lo guarda en un objeto de tipo "TreeMap" (Map) llamado "thesauro". Si no encuentra "stopwords_es.txt" muestra un error.
-	public static void cargarThesauroInvertido (String rutaThesauro) throws IOException {
+	public static boolean cargarThesauroInvertido (String rutaThesauro) throws IOException {
 		File ficheroThesauro = new File (rutaThesauro + "\\stopwords_es.txt");
 		
 		if (!ficheroThesauro.exists ()) {
 			System.out.println ("\n[ERROR] El sistema no pudo cargar el archivo especificado (stopwords_es.txt)");
-			return;
+			return false;
 		}
 		else {
 			thesauro = new TreeMap <String, Integer> ();
@@ -161,6 +156,7 @@ public class PCCrawling {
 			}
 			System.out.println ("\n[CARGA] El sistema cargó el archivo especificado (stopwords_es.txt)");
 			br.close ();
+			return true;
 		}
 	}
 	
@@ -169,11 +165,14 @@ public class PCCrawling {
 	//otra tecla el sistema le avisará que la opción introducida no existe y le preguntará de nuevo qué acción desea realizar.
 	public static void seleccionarOpcion (String [] args) throws Exception {
 		Scanner scanner = new Scanner (System.in); String opcion = "0";
-		System.out.println ("\n[PC-CRAWLER] Seleccione la opción que desea realizar (0-2):");
-		System.out.print (" 0. Salir \n 1. Consultar término \n 2. Recorrer directorio");
 		
 		do {
+			if (opcion.equals ("0") || opcion.equals ("1") || opcion.equals ("2")) {
+				System.out.println ("\n[PC-CRAWLER] Seleccione la opción que desea realizar (0-2):");
+				System.out.print (" 0. Salir \n 1. Consultar término \n 2. Recorrer directorio");
+			}
 			System.out.print ("\n[PC-CRAWLER] Opción elegida: ");
+			
 			switch (opcion = scanner.next ()) {
 			case "0":
 				break;
@@ -182,15 +181,16 @@ public class PCCrawling {
 				consulta.consultar (); //Ejecuta la acción de consultar un término, indicando dónde aparece y cuántas veces.
 				break;
 			case "2":
-				cargarThesauroInvertido (args [1]); //Carga las palabras del thesauro (stopwords_es.txt).
-				recorridoRecursivo (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
-				salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
-				mostrarEnPantalla (); //Vuelca en pantalla el resultado obtenido (palabras leídas y el número de veces).
+				if (cargarThesauroInvertido (args [1])) { //Carga las palabras del thesauro (stopwords_es.txt).
+					recorridoRecursivo (args [0]); //Ejecuta el algoritmo principal (recorre los ficheros y cuenta las palabras).
+					salvarObjeto (args [1]); //Salva el objeto/diccionario de salida (map.ser).
+					mostrarEnPantalla (); //Vuelca en pantalla el resultado obtenido (palabras leídas y el número de veces).
+				}
 				break;
 			default:
 				System.out.print ("\n[PC-CRAWLER] La opción que ha introducido no existe. Vuelva a intentarlo");
 			}
-		} while (!opcion.equals ("0") && !opcion.equals ("1") && !opcion.equals ("2"));
+		} while (!opcion.equals ("0"));
 		scanner.close ();
 	}
 
