@@ -6,16 +6,22 @@ public class Consultas {
 	
 	static Map <String, Ocurrencias> map; //Estrutura de datos que almacena las palabras que aparecen y cuántas veces.
 	
+	/** ------------------------------------------------------------------------------------------------------------------------ **/
+	
 	//Inicializa las instancias de la clase Consultas (constructor).
 	public Consultas (Map <String, Ocurrencias> map) {
 		Consultas.map = map;
 	}
+	
+	/** ------------------------------------------------------------------------------------------------------------------------ **/
 	
 	//Devuelve el mismo término pasado como parámetro de entrada ("termino") pero sin mayúsculas, tildes ni diéresis.
 	public static String reemplazarCaracteresEspeciales (String termino) {
 		String source = Normalizer.normalize (termino.toLowerCase (), Normalizer.Form.NFD);
 	    return source.replaceAll ("[^\\p{ASCII}]", "");
 	}
+	
+	/** ------------------------------------------------------------------------------------------------------------------------ **/
 
 	//El sistema solicita al usuario que introduzca por teclado el término que desea consultar. Si no encuentra el término
 	//lo indicará mediante un mensaje. Por el contrario, si lo encuentra indicará en qué ficheros aparece y cuántas veces.
@@ -38,8 +44,6 @@ public class Consultas {
 			    System.out.println (" - " + fichero.getKey () + ": " + fichero.getValue ());
 			}
 		}
-		else {
-			System.out.println ("[PC-Crawler] El término '"+ consulta +"' no aparece ninguna vez");
-		}
+		else { System.out.println ("[PC-Crawler] El término '"+ consulta +"' no aparece ninguna vez"); }
 	}
 }
